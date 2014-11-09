@@ -22,10 +22,10 @@ class MetroParcels():
 """
 
   script_path = os.path.dirname(os.path.realpath(__file__))
-  source_shape_hennepin = os.path.join(script_path, '../data/reprojected_4326-shps/hennepin-parcels.shp')
-  source_shape_ramsey = os.path.join(script_path, '../data/reprojected_4326-shps/ramsey-parcels.shp')
+  #source_shape_hennepin = os.path.join(script_path, '../data/reprojected_4326-shps/hennepin-parcels.shp')
+  #source_shape_ramsey = os.path.join(script_path, '../data/reprojected_4326-shps/ramsey-parcels.shp')
   source_shape_anoka = os.path.join(script_path, '../data/reprojected_4326-shps/anoka-parcels.shp')
-  source_shape_dakota = os.path.join(script_path, '../data/reprojected_4326-shps/dakota-parcels.shp')
+  #source_shape_dakota = os.path.join(script_path, '../data/reprojected_4326-shps/dakota-parcels.shp')
   source_shape_combined = os.path.join(script_path, '../data/combined-shp/metro-combined.shp')
 
 
@@ -37,22 +37,22 @@ class MetroParcels():
     self.out_driver = ogr.GetDriverByName('ESRI Shapefile')
 
     # Read files
-    self.shape_hennepin = self.in_driver.Open(self.source_shape_hennepin, 0)
+    #self.shape_hennepin = self.in_driver.Open(self.source_shape_hennepin, 0)
     self.shape_anoka = self.in_driver.Open(self.source_shape_anoka, 0)
-    self.shape_ramsey = self.in_driver.Open(self.source_shape_ramsey, 0)
-    if self.shape_hennepin is None or self.shape_anoka is None or self.shape_ramsey is None:
+    #self.shape_ramsey = self.in_driver.Open(self.source_shape_ramsey, 0)
+    if self.shape_anoka is None: # or self.shape_hennepin is None or self.shape_ramsey is None:
       self.error('Could not find a necessary shapefile')
       sys.exit(1)
 
     # Get actual layers
-    self.hennepin = self.shape_hennepin.GetLayer()
+    #self.hennepin = self.shape_hennepin.GetLayer()
     self.anoka = self.shape_anoka.GetLayer()
-    self.ramsey = self.shape_ramsey.GetLayer()
+    #self.ramsey = self.shape_ramsey.GetLayer()
 
     # Get layer definitions (no need to do this more than once)
-    self.hennepin_definition = self.hennepin.GetLayerDefn()
+    #self.hennepin_definition = self.hennepin.GetLayerDefn()
     self.anoka_definition = self.anoka.GetLayerDefn()
-    self.ramsey_definition = self.ramsey.GetLayerDefn()
+    #self.ramsey_definition = self.ramsey.GetLayerDefn()
 
     # Start pocessing
     self.process()
@@ -62,9 +62,9 @@ class MetroParcels():
     """
     Close out data sources
     """
-    self.shape_hennepin.Destroy()
+    #self.shape_hennepin.Destroy()
     self.shape_anoka.Destroy()
-    self.shape_ramsey.Destroy()
+    #self.shape_ramsey.Destroy()
     self.shape_combined.Destroy()
 
 
@@ -119,9 +119,9 @@ class MetroParcels():
     """
     Get feature count.
     """
-    self.hennepin_count = self.hennepin.GetFeatureCount()
+    #self.hennepin_count = self.hennepin.GetFeatureCount()
     self.anoka_count = self.anoka.GetFeatureCount()
-    self.ramsey_count = self.ramsey.GetFeatureCount()
+    #self.ramsey_count = self.ramsey.GetFeatureCount()
 
 
   def define_combined(self, remove_old = True, create_fields = True):
@@ -152,6 +152,7 @@ class MetroParcels():
         self.combined.CreateField(field)
 
     # Create other fields here
+    self.combined.CreateField(ogr.FieldDefn('TAX_ACRE', ogr.OFTReal))
 
     self.combined_definition = self.combined.GetLayerDefn()
 
@@ -552,8 +553,16 @@ class MetroParcels():
     field_count = self.combined_definition.GetFieldCount()
 
     # Add field values from input Layer
-    for i in range(0, field_count):
-      new.SetField(self.combined_definition.GetFieldDefn(i).GetNameRef(), old.GetField(i))
+    for i in range(0, field_count):	
+	name = self.combined_definition.GetFieldDefn(i).GetNameRef()
+	if name == 'TAX_ACRE':
+	    acres = old.GetField('ACRES_POLY')
+	    if acres != 0:
+		new.SetField('TAX_ACRE', old.GetField('TOTAL_TAX') / acres)
+    	    else:
+		new.SetField('TAX_ACRE', 'N/A')
+        else:
+  	    new.SetField(name, old.GetField(i))
 
     # Manual settings
     new.SetField('COUNTY_ID', '2')
@@ -814,9 +823,9 @@ class MetroParcels():
 
     # Combine sources.  For some reason if we do hennepin first, it hangs
     # on anoka
-    self.combine('ramsey')
+    #self.combine('ramsey')
     self.combine('anoka')
-    self.combine('hennepin')
+    #self.combine('hennepin')
 
     # Spatial reference stuff
     self.make_spatial_reference()
