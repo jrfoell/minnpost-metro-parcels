@@ -550,22 +550,19 @@ class MetroParcels():
     Translation layer for each feature for Anoka.
     """
     # Figure out number of fields
-    field_count = self.combined_definition.GetFieldCount()
+    field_count = self.anoka_definition.GetFieldCount()
 
     # Add field values from input Layer
     for i in range(0, field_count):	
-	name = self.combined_definition.GetFieldDefn(i).GetNameRef()
-	if name == 'TAX_ACRE':
-	    acres = old.GetField('ACRES_POLY')
-	    if acres != 0:
-		new.SetField('TAX_ACRE', old.GetField('TOTAL_TAX') / acres)
-    	    else:
-		new.SetField('TAX_ACRE', 'N/A')
-        else:
-  	    new.SetField(name, old.GetField(i))
+ 	new.SetField(self.combined_definition.GetFieldDefn(i).GetNameRef(), old.GetField(i))
 
     # Manual settings
     new.SetField('COUNTY_ID', '2')
+    acres = old.GetField('ACRES_POLY')
+    if acres != 0:
+      new.SetField('TAX_ACRE', old.GetField('TOTAL_TAX') / acres)
+    else:
+      new.SetField('TAX_ACRE', 0)
 
     return new
 
